@@ -6,7 +6,7 @@ use rand::RngExt;
 const TILE_DIMENSION: u32 = 640;
 const ATLAS_ROWS: u32 = 9;
 const ATLAS_COLUMNS: u32 = 8;
-const USE_COLUMN: usize = 2;
+const USE_COLUMN: usize = 4;
 const START_RADIUS: f32 = 25.0;
 const RESTITUTION: f32 = 0.3;
 const SPAWN_LIMIT: f32 = 200.0;
@@ -135,7 +135,7 @@ fn stage_ball(mut commands: Commands, emoji_atlas: Res<EmojiAtlas>) {
     let atlas_index = USE_COLUMN + ((index - 1) * ATLAS_COLUMNS as usize);
     let radius = (START_RADIUS * index as f32) * 0.66;
 
-     commands.spawn((
+    commands.spawn((
         Sprite {
             custom_size: Some(Vec2::splat(radius * 2.0)),
             ..Sprite::from_atlas_image(
@@ -151,9 +151,7 @@ fn stage_ball(mut commands: Commands, emoji_atlas: Res<EmojiAtlas>) {
         RigidBody::Static,
         Staged,
         Transform::from_xyz(-450.0, 200.0, 0.0),
-        Ball {
-            index,
-        }
+        Ball { index },
     ));
 }
 
@@ -167,23 +165,23 @@ fn drop_ball(
     if !buttons.just_released(MouseButton::Left) {
         return;
     }
-    
+
     let Some(cursor) = window.cursor_position() else {
         return;
     };
-    
+
     let (camera, camera_transform) = *camera;
-    
+
     let Ok(world_pos) = camera.viewport_to_world_2d(camera_transform, cursor) else {
         return;
     };
-    
+
     if world_pos.y < SPAWN_LIMIT {
         return;
     }
-    
+
     let entity = ball_query.into_inner();
-    
+
     commands.entity(entity).insert((
         RigidBody::Dynamic,
         Transform::from_translation(world_pos.extend(0.0)),
@@ -195,7 +193,11 @@ fn drop_ball(
     commands.run_system_cached(stage_ball);
 }
 
-fn despawn_ball(mut commands: Commands, balls: Query<(&Transform, Entity), With<Ball>>, mut writer: MessageWriter<IncreaseScore>) {
+fn despawn_ball(
+    mut commands: Commands,
+    balls: Query<(&Transform, Entity), With<Ball>>,
+    mut writer: MessageWriter<IncreaseScore>,
+) {
     for (transform, entity) in balls {
         if transform.translation.y < OUT_OF_BOUNDS {
             commands.entity(entity).despawn();
@@ -246,9 +248,7 @@ fn merge(
                         )
                     },
                     CollisionEventsEnabled,
-                    Ball {
-                        index
-                    },
+                    Ball { index },
                 ));
             }
 
@@ -288,6 +288,9 @@ fn main() {
             Startup,
             (load_assets, setup_scene, stage_ball, setup_ui, setup_camera).chain(),
         )
-        .add_systems(Update, (despawn_ball, merge, drop_ball, update_score, update_ui))
+        .add_systems(
+            Update,
+            (despawn_ball, merge, drop_ball, update_score, update_ui),
+        )
         .run();
 }

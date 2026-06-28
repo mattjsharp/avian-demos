@@ -1,5 +1,7 @@
 use avian2d::prelude::*;
+use bevy::diagnostic::FrameTimeDiagnosticsPlugin;
 use bevy::prelude::*;
+use bevy::window::PresentMode;
 use rand::RngExt;
 
 #[derive(Component)]
@@ -25,6 +27,13 @@ struct EmojiAtlas {
     texture: Handle<Image>,
     layout: Handle<TextureAtlasLayout>,
     count: usize,
+}
+
+#[derive(Resource)]
+struct FpsCounter {
+    timer: Timer,
+    frames: u32,
+    fps: f32,
 }
 
 fn setup(
@@ -185,13 +194,15 @@ fn update_ui(
     gravity: Res<Gravity>,
     restitution: Res<BallRestitution>,
     radius: Res<BallRadius>,
+    counter: Res<FpsCounter>,
 ) {
     **span = format!(
-        "Balls: {}\nGravity (up/down/left/right): {:.2}\nRestitution (Q/A): {:.2}\nRadius (W/S): {:.2}",
+        "Balls: {}\nGravity (up/down/left/right): {:.2}\nRestitution (Q/A): {:.2}\nRadius (W/S): {:.2}\nFPS: {}",
         balls.count().to_string(),
         gravity.0,
         restitution.0,
-        radius.0
+        radius.0,
+        counter.fps
     )
     .into();
 }
@@ -281,16 +292,40 @@ fn toggle_floor_collision(
     }
 }
 
+fn update_fps(time: Res<Time>, mut counter: ResMut<FpsCounter>) {
+    counter.frames += 1;
+    counter.timer.tick(time.delta());
+
+    if counter.timer.just_finished() {
+        counter.fps = counter.frames as f32 / counter.timer.duration().as_secs_f32();
+
+        counter.frames = 0;
+    }
+}
+
 fn main() {
     App::new()
         .add_plugins((
-            DefaultPlugins,
+            DefaultPlugins.set(WindowPlugin {
+                primary_window: Some(Window {
+                    present_mode: PresentMode::AutoNoVsync,
+                    title: "Ball Dropper".into(),
+                    ..default()
+                }),
+                ..default()
+            }),
             PhysicsPlugins::default(),
+            FrameTimeDiagnosticsPlugin::default(),
             // PhysicsDebugPlugin,
         ))
         .insert_resource(Gravity(Vec2::new(0.0, -600.0)))
         .insert_resource(BallRadius(10.0))
         .insert_resource(BallRestitution(0.0))
+        .insert_resource(FpsCounter {
+            timer: Timer::from_seconds(0.25, TimerMode::Repeating),
+            frames: 0,
+            fps: 0.0,
+        })
         .add_systems(Startup, (setup, load_assets))
         .add_systems(
             Update,
@@ -302,6 +337,7 @@ fn main() {
                 update_gravity,
                 update_restitution,
                 update_radius,
+                update_fps,
             ),
         )
         .run();
