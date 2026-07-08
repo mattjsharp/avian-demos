@@ -133,11 +133,10 @@ fn stage_ball(mut commands: Commands, emoji_atlas: Res<EmojiAtlas>) {
     let index = rng.random_range(1..=3); // Some variance when spawning balls
 
     let atlas_index = USE_COLUMN + ((index - 1) * ATLAS_COLUMNS as usize);
-    let radius = (START_RADIUS * index as f32) * 0.66;
 
     commands.spawn((
         Sprite {
-            custom_size: Some(Vec2::splat(radius * 2.0)),
+            custom_size: Some(Vec2::splat(((START_RADIUS * index as f32) * 0.66) * 2.0)),
             ..Sprite::from_atlas_image(
                 emoji_atlas.texture.clone(),
                 TextureAtlas {
@@ -146,7 +145,6 @@ fn stage_ball(mut commands: Commands, emoji_atlas: Res<EmojiAtlas>) {
                 },
             )
         },
-        Collider::circle(radius),
         Restitution::new(RESTITUTION),
         RigidBody::Static,
         Staged,
@@ -160,7 +158,7 @@ fn drop_ball(
     buttons: Res<ButtonInput<MouseButton>>,
     window: Single<&Window>,
     camera: Single<(&Camera, &GlobalTransform)>,
-    ball_query: Single<Entity, With<Staged>>,
+    ball_query: Single<(Entity, &Ball), With<Staged>>,
 ) {
     if !buttons.just_released(MouseButton::Left) {
         return;
@@ -180,11 +178,12 @@ fn drop_ball(
         return;
     }
 
-    let entity = ball_query.into_inner();
+    let (entity, ball) = ball_query.into_inner();
 
     commands.entity(entity).insert((
         RigidBody::Dynamic,
         Transform::from_translation(world_pos.extend(0.0)),
+        Collider::circle((START_RADIUS * ball.index as f32) * 0.66),
         CollisionEventsEnabled,
     ));
 
