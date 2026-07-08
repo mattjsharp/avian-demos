@@ -272,6 +272,7 @@ fn toggle_floor_collision(
     keyboard: Res<ButtonInput<KeyCode>>,
     query: Single<(Entity, Option<&ColliderDisabled>), With<Floor>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    asset_server: Res<AssetServer>
 ) {
     if !keyboard.just_pressed(KeyCode::Space) {
         return;
@@ -289,6 +290,8 @@ fn toggle_floor_collision(
         commands
             .entity(entity)
             .insert(MeshMaterial2d(materials.add(Color::srgb(0.05, 0.12, 0.15))));
+
+        commands.spawn(AudioPlayer::new(asset_server.load("flush.ogg")));
     }
 }
 
