@@ -272,7 +272,7 @@ fn toggle_floor_collision(
     keyboard: Res<ButtonInput<KeyCode>>,
     query: Single<(Entity, Option<&ColliderDisabled>), With<Floor>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    asset_server: Res<AssetServer>
+    asset_server: Res<AssetServer>,
 ) {
     if !keyboard.just_pressed(KeyCode::Space) {
         return;
